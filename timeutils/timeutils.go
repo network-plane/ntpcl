@@ -60,9 +60,6 @@ func FetchTimeFromDaytimeProtocol(server string) (time.Time, time.Duration, erro
 
 	rtt := time.Since(start)
 
-	// Debug: Print raw Daytime response
-	fmt.Printf("Raw Daytime response: %s\n", response)
-
 	serverTime, err := parseDaytimeResponse(response)
 	if err != nil {
 		return time.Time{}, 0, err

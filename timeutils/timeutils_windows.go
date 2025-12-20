@@ -4,6 +4,7 @@
 package timeutils
 
 import (
+	"fmt"
 	"syscall"
 	"time"
 	"unsafe"
@@ -27,7 +28,11 @@ func SetSystemTime(t time.Time) error {
 
 	r1, _, err := setSystemTimeProc.Call(uintptr(unsafe.Pointer(&systemTime)))
 	if r1 == 0 {
-		return err
+		if err != nil {
+			return err
+		}
+		// If SetSystemTime returns 0 (failure) but err is nil, return a generic error
+		return fmt.Errorf("SetSystemTime failed")
 	}
 	return nil
 }
