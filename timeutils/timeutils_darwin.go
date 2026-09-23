@@ -13,7 +13,7 @@ func SetSystemTime(t time.Time) error {
 	utc := t.UTC()
 	tv := unix.Timeval{
 		Sec:  utc.Unix(),
-		Usec: int64(utc.Nanosecond() / 1000),
+		Usec: int32(utc.Nanosecond() / 1000),
 	}
 	return unix.Settimeofday(&tv)
 }

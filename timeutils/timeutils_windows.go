@@ -5,8 +5,14 @@ package timeutils
 import (
 	"fmt"
 	"time"
+	"unsafe"
 
 	"golang.org/x/sys/windows"
+)
+
+var (
+	modKernel32       = windows.NewLazySystemDLL("kernel32.dll")
+	procSetSystemTime = modKernel32.NewProc("SetSystemTime")
 )
 
 // SetSystemTime sets the system time on Windows using the Windows API.
@@ -22,8 +28,12 @@ func SetSystemTime(t time.Time) error {
 		Milliseconds: uint16(utc.Nanosecond() / 1e6),
 	}
 
-	if err := windows.SetSystemTime(&st); err != nil {
-		return fmt.Errorf("SetSystemTime failed: %w", err)
+	r, _, err := procSetSystemTime.Call(uintptr(unsafe.Pointer(&st)))
+	if r == 0 {
+		if err != nil && err != windows.ERROR_SUCCESS {
+			return fmt.Errorf("SetSystemTime failed: %w", err)
+		}
+		return fmt.Errorf("SetSystemTime failed")
 	}
 	return nil
 }
