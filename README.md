@@ -1,100 +1,101 @@
 # ntpcl
-A simple NTP client to fetch and optionally set system time
 
-## Default Run
-By just running the app you get the NTP server time, the local time and many details for the server and the time.
+A simple time client to fetch and optionally set system time from NTP, HTTP, Daytime, or Time Protocol sources.
+
+## Install
 
 ```bash
-./ntpcl
+go install github.com/earentir/ntpcl@latest
 ```
+
+Or build from source:
+
 ```bash
-NTP   : 2024-06-26 23:43:34.038635381 +0300 EEST m=+0.097589882
-Local : 2024-06-26 23:43:34.041431512 +0300 EEST m=+0.100386014
-NTP server: europe.pool.ntp.org (80.89.32.122)
-Stratum: 2
-Precision: 953
-Root Delay: 21.896362ms
-Root Dispersion: 32.653809ms
-Round-trip delay: 82.871417ms
-Clock offset: -2.79595ms
-Poll interval: 8s
+git clone https://github.com/earentir/ntpcl.git
+cd ntpcl
+go build -o ntpcl .
 ```
 
 ## Usage
 
-### Set Time to NTP Server
+### Default (NTP pool)
+
 ```bash
-./ntpcl --set
-```
-```bash
-NTP   : 2024-06-26 23:44:48.532935783 +0300 EEST m=+0.095169689
-Local : 2024-06-26 23:44:48.535802442 +0300 EEST m=+0.098036349
-NTP server: europe.pool.ntp.org (131.111.8.63)
-Stratum: 2
-Precision: 953
-Root Delay: 21.896362ms
-Root Dispersion: 33.7677ms
-Round-trip delay: 84.05751ms
-Clock offset: -2.866526ms
-Poll interval: 8s
-System time updated successfully
-New local system time: 2024-06-26 23:44:48.536349515 +0300 EEST m=+0.179418170
-Time difference after setting: 84.248481ms
-```
-### Set Time to Custom NTP Server
-```bash
-./ntpcl --ntp-server europe.pool.ntp.org --set
-```
-```bash
-NTP   : 2024-06-26 23:45:34.414975883 +0300 EEST m=+0.137681722
-Local : 2024-06-26 23:45:34.33176466 +0300 EEST m=+0.054470499
-NTP server: europe.pool.ntp.org (158.101.213.248)
-Stratum: 2
-Precision: 953
-Root Delay: 350.952µs
-Root Dispersion: 930.786µs
-Round-trip delay: 38.742872ms
-Clock offset: 83.211354ms
-Poll interval: 1s
-System time updated successfully
-New local system time: 2024-06-26 23:45:34.41829209 +0300 EEST m=+0.107186288
-Time difference after setting: -30.495434ms
+./ntpcl
 ```
 
-### High Accuracy Mode
+Queries `europe.pool.ntp.org` and prints a table with server time, local time, offset, RTT, and NTP details.
+
+### Set system time from NTP
+
 ```bash
-./ntpcl --ntp-server europe.pool.ntp.org --high-accuracy --set
-```
-```bash
-NTP   : 2024-06-26 23:46:37.747730162 +0300 EEST m=+0.116907113
-Local : 2024-06-26 23:46:37.681243144 +0300 EEST m=+0.050420097
-NTP server: europe.pool.ntp.org (49.12.125.53)
-Stratum: 2
-Precision: 953
-Root Delay: 350.952µs
-Root Dispersion: 991.821µs
-Round-trip delay: 39.303808ms
-Clock offset: 66.487121ms
-Poll interval: 1s
-High accuracy mode enabled. Gathering multiple samples...
-Average offset: 64.595344ms
-Adjusted NTP time: 2024-06-26 23:46:42.212707382 +0300 EEST m=+4.581884334
-System time updated successfully
-New local system time: 2024-06-26 23:46:42.216784924 +0300 EEST m=+4.577605048
-Time difference after setting: -4.279286ms
+sudo ./ntpcl --set
+./ntpcl ntp pool.ntp.org --set
+./ntpcl --set ntp pool.ntp.org
 ```
 
-### Web Time
+Persistent flags work before or after the subcommand.
+
+### High accuracy mode
+
 ```bash
-./ntpcl --http-server https://google.com
+./ntpcl ntp pool.ntp.org --high-accuracy
+sudo ./ntpcl ntp pool.ntp.org --high-accuracy --set
 ```
+
+Collects multiple spaced NTP samples, drops outliers, and uses the median offset.
+
+### Other sources
+
 ```bash
-Querying time from HTTP server: https://google.com
-Status Code: 200
-WEB   : 2024-06-27 14:53:10 +0000 GMT
-RTT   : 1.122863309s
-Local : 2024-06-27 17:53:11.276849997 +0300 EEST m=+1.123107442
-Time difference: -1.276849997s
-RTT   : 1.122863309s
-Retrieved from HTTP server: https://google.co
+./ntpcl http https://example.com
+./ntpcl daytime time.nist.gov
+./ntpcl time time.nist.gov
+./ntpcl windows-time dc.example.com
 ```
+
+`windows-time` queries a Windows Time host over unsigned NTP. It is not MS-SNTP authenticated.
+
+### Safety flags
+
+```bash
+./ntpcl --dry-run --set ntp pool.ntp.org
+./ntpcl --max-delta 5s --set ntp pool.ntp.org
+./ntpcl --force --set http https://example.com
+```
+
+- `--dry-run` shows what would be set without changing the clock
+- `--max-delta` refuses large clock steps (default 1s; 100ms in high-accuracy mode)
+- `--force` overrides max-delta and high-RTT checks for coarse sources
+
+### Output formats
+
+```bash
+./ntpcl --format json ntp pool.ntp.org
+./ntpcl --format unix ntp pool.ntp.org
+./ntpcl --format rfc3339 --quiet ntp pool.ntp.org
+./ntpcl --no-color ntp pool.ntp.org
+```
+
+### Set via system commands
+
+```bash
+sudo ./ntpcl --set --system-tools ntp pool.ntp.org
+```
+
+Uses `date` on Linux/macOS or PowerShell `Set-Date` on Windows instead of direct syscalls.
+
+## Exit codes
+
+| Code | Meaning |
+| --- | --- |
+| 0 | Success |
+| 1 | General error |
+| 2 | Usage error |
+| 3 | Network error |
+| 4 | Invalid time / refused clock step |
+| 5 | Permission denied |
+
+## License
+
+MIT — see [LICENSE](LICENSE).
