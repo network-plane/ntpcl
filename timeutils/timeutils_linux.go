@@ -1,19 +1,19 @@
 //go:build linux
-// +build linux
 
 package timeutils
 
 import (
-	"syscall"
 	"time"
+
+	"golang.org/x/sys/unix"
 )
 
-// SetSystemTime sets the system time on Linux using syscalls.
+// SetSystemTime sets the system time on Linux using a syscall.
 func SetSystemTime(t time.Time) error {
 	utc := t.UTC()
-	tv := syscall.Timeval{
+	tv := unix.Timeval{
 		Sec:  utc.Unix(),
 		Usec: int64(utc.Nanosecond() / 1000),
 	}
-	return syscall.Settimeofday(&tv)
+	return unix.Settimeofday(&tv)
 }

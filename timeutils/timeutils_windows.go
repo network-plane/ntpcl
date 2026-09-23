@@ -1,19 +1,18 @@
 //go:build windows
-// +build windows
 
 package timeutils
 
 import (
 	"fmt"
-	"syscall"
 	"time"
-	"unsafe"
+
+	"golang.org/x/sys/windows"
 )
 
 // SetSystemTime sets the system time on Windows using the Windows API.
 func SetSystemTime(t time.Time) error {
 	utc := t.UTC()
-	systemTime := syscall.Systemtime{
+	st := windows.Systemtime{
 		Year:         uint16(utc.Year()),
 		Month:        uint16(utc.Month()),
 		Day:          uint16(utc.Day()),
@@ -23,16 +22,8 @@ func SetSystemTime(t time.Time) error {
 		Milliseconds: uint16(utc.Nanosecond() / 1e6),
 	}
 
-	kernel32 := syscall.NewLazyDLL("kernel32.dll")
-	setSystemTimeProc := kernel32.NewProc("SetSystemTime")
-
-	r1, _, err := setSystemTimeProc.Call(uintptr(unsafe.Pointer(&systemTime)))
-	if r1 == 0 {
-		if err != nil {
-			return err
-		}
-		// If SetSystemTime returns 0 (failure) but err is nil, return a generic error
-		return fmt.Errorf("SetSystemTime failed")
+	if err := windows.SetSystemTime(&st); err != nil {
+		return fmt.Errorf("SetSystemTime failed: %w", err)
 	}
 	return nil
 }

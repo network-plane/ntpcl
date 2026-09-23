@@ -1,20 +1,19 @@
 //go:build darwin
-// +build darwin
 
 package timeutils
 
 import (
-	"syscall"
 	"time"
+
+	"golang.org/x/sys/unix"
 )
 
-// SetSystemTime sets the system time on macOS using the Darwin syscall.
+// SetSystemTime sets the system time on macOS using a syscall.
 func SetSystemTime(t time.Time) error {
 	utc := t.UTC()
-	tv := syscall.Timeval{
+	tv := unix.Timeval{
 		Sec:  utc.Unix(),
-		Usec: int32(utc.Nanosecond() / 1000), // Ensure this is int32
+		Usec: int64(utc.Nanosecond() / 1000),
 	}
-
-	return syscall.Settimeofday(&tv)
+	return unix.Settimeofday(&tv)
 }
