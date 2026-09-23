@@ -12,15 +12,15 @@ plugins:
 # Many linters and tools depend on runtimes - configure them here. (https://docs.trunk.io/runtimes)
 runtimes:
   enabled:
-    - go@1.21.0
+    - go@1.25.1
     - node@18.12.1
     - python@3.10.8
 # This is the section where you manage your linters. (https://docs.trunk.io/check/configuration)
 lint:
   enabled:
     - git-diff-check
-    - gofmt@1.20.4
-    - golangci-lint@1.59.1
+    - gofmt@1.25.1
+    - golangci-lint@1.64.8
     - markdownlint@0.41.0
     - osv-scanner@1.8.1
     - prettier@3.3.2
